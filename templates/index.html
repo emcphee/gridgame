@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid Game</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+  <!-- This is the only part of the css that we need to change dynamically -->
+  <style>
+    .grid-container {
+      display: grid;
+      width: 90vw;
+      height: 90vh;
+      max-width: {{ column_count/row_count * 90 }}vh;
+      max-height: {{ row_count/column_count * 90 }}vw;
+
+      grid-template-columns: repeat({{ column_count }}, 1fr); /* Equal distribution of columns */
+      margin: 0 auto; /* Center the grid-container */
+
+      border: 1px solid black;
+      padding: 1px;
+    }
+
+    .grid-item {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid-container" id="grid">
+    <!-- JavaScript will populate the grid -->
+  </div>
+
+  <script>
+    // Define the size of the grid
+    const rows = {{ row_count }};
+    const columns = {{ column_count }};
+
+    // Get the grid container element
+    const gridContainer = document.getElementById('grid');
+
+    // Populate the grid with cells
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < columns; j++) {
+        const cell = document.createElement('div');
+        cell.className = 'grid-item';
+        cell.id = `${i}-${j}`;
+        cell.addEventListener('click', function() {
+          const location = cell.id.split('-')
+          // Emit action
+          socket.emit('client_action',
+            {
+              'location': location,
+              'action': "example_action"
+            });
+        });
+        gridContainer.appendChild(cell);
+      }
+    }
+  </script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script>
+        // interval game updates
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('update', function(data) {
+            //document.getElementById('update-list');
+            for(var i = 0; i < data['cell_updates'].length; i++){
+              var update = data['cell_updates'][i];
+              var location = update['location']; // (row, column)
+              var color = update['color']; // hex rgb
+
+              // making the change to that cell
+              var cell_id = `${location[0]}-${location[1]}`
+              var cell_to_update = document.getElementById(cell_id);
+              cell_to_update.style.backgroundColor = color;
+              console.log("made update to cell at " + location);
+            }
+        });
+    </script>
+</body>
+</html>
