@@ -1,5 +1,15 @@
 import copy
+import random
 
+# GAME STATE SCHEMA
+# 1. game board
+    # 2d array of cells
+    # CELL SCHEMA
+        # location
+        # holder
+# 2. color for each holder
+    # dictionary/hashmap
+        # UID : COLOR (hex string)
 def init_game_state(rows, cols):
     game_state = {}
 
@@ -21,6 +31,7 @@ def init_game_state(rows, cols):
 
     return game_state
 
+# terrible unoptimized double for loop
 def generate_next_frame(game_state):
     cell_updates = []
 
@@ -41,14 +52,17 @@ def generate_next_frame(game_state):
                     neighbor_cell = game_board_copy[neighbor_location[0]][neighbor_location[1]]
                     # if the cell has no holder
                     if neighbor_cell['holder'] == None:
-                        game_board[neighbor_location[0]][neighbor_location[1]]['holder'] = cell_copy['holder']
-                        update = {
-                            'location': neighbor_cell['location'],
-                            'color': game_state['holder-colors'][cell_copy['holder']]
-                        }
-                        cell_updates.append(update)
+                        # 30% chance to spread where it can.
+                        if random.randint(0, 99) < 30:
+                            game_board[neighbor_location[0]][neighbor_location[1]]['holder'] = cell_copy['holder']
+                            update = {
+                                'location': neighbor_cell['location'],
+                                'color': game_state['holder-colors'][cell_copy['holder']]
+                            }
+                            cell_updates.append(update)
     return cell_updates
 
+# Takes a cell and returns which of its neighbors exist
 def find_valid_neighbors(cell, ROWS, COLS):
     valid_neighbors = []
     rownum = cell['location'][0]

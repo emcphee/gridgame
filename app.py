@@ -1,8 +1,8 @@
 from flask import Flask, render_template, session, request, jsonify
-from utils import init_game_state
-import uuid
 from flask_socketio import SocketIO, emit
+import uuid
 import time
+
 import utils
 
 app = Flask(__name__)
@@ -12,6 +12,7 @@ app.secret_key = 'yoijdsfnjokdwsvfnweoffeq9uh'
 
 ROWS = 100
 COLS = 100
+tick_time = 0.2 # tick time in seconds
 
 game_states = {}
 unapplied_actions = {}
@@ -30,7 +31,7 @@ def update_game(data):
 
 def send_update(uid):
     while True:
-        time.sleep(0.1) # update delay
+        start_time = time.time()
 
         cell_updates = [] # updates we need to send the clients
 
@@ -46,6 +47,13 @@ def send_update(uid):
         if len(cell_updates) > 0:
             socketio.emit('update', {'cell_updates': cell_updates})
 
+        # If tick finished faster than the tick time, wait
+        compute_time = time.time() - start_time
+        sleep_duration = max(0, tick_time - compute_time)
+        time.sleep(sleep_duration)
+        if compute_time > tick_time:
+            print("Goal Tick Time:", tick_time, "Actual:", compute_time)
+
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
@@ -55,14 +63,14 @@ def handle_connect():
 
     # Generate global game state vars
     unapplied_actions[session['uid']] = []
-    game_states[session['uid']] = init_game_state(ROWS, COLS)
+    game_states[session['uid']] = utils.init_game_state(ROWS, COLS)
     
     # initialize the holder color
     # TODO: make game state indexed in lobby num, not session uid
-    game_states[session['uid']]['holder-colors'][session['uid']] = '#FF0000'
+    game_states[session['uid']]['holder-colors'][session['uid']] = '#000000'
 
     # Start game update loop
     socketio.start_background_task(target=send_update, uid=session['uid'])
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, port=8001, host='0.0.0.0', allow_unsafe_werkzeug=True)
